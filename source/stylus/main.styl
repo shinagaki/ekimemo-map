@@ -1,0 +1,30 @@
+html,
+body
+  height 100%
+  margin 0
+
+#map
+  box-sizing border-box
+  height 100%
+
+.svg-overlay
+  position relative
+  svg
+    position absolute
+    top -10000px
+    left -10000px
+    width 20000px
+    height 20000px
+
+path
+  &.cell
+    fill none
+    &.checked
+      fill rgba(255, 0, 0, .2)
+      &:hover
+        fill rgba(255, 0, 0, .4)
+    &:hover
+      fill rgba(255, 255, 0, .2)
+
+text
+  text-shadow 1px 1px 1px white
