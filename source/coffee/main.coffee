@@ -30,7 +30,7 @@ main = (pointJson) ->
     overlay.draw = ->
       bufferRange = 0.5
       bounds = map.getBounds()
-      pointdata = pointjson.features.filter((v) ->
+      pointdata = pointJson.features.filter((v) ->
         v.geometry.coordinates[1] > bounds.getSouthWest().lat() - bufferRange and v.geometry.coordinates[1] < bounds.getNorthEast().lat() + bufferRange and v.geometry.coordinates[0] > bounds.getSouthWest().lng() - bufferRange and v.geometry.coordinates[0] < bounds.getNorthEast().lng() + bufferRange
         # return bounds.contains(new google.maps.LatLng(v.geometry.coordinates[1], v.geometry.coordinates[0]));
       )
@@ -116,6 +116,6 @@ if localStorage.getItem('ekimemo_checkedList')
   catch e
     console.log e
     checkedList = []
-d3.json './stations.geojson', (pointJson) ->
+d3.json './json/stations.geojson', (pointJson) ->
   main pointJson
   return

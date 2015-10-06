@@ -69,4 +69,4 @@ gulp.task 'deploy', ->
   gulp.src "#{paths.src.html}/**/*"
     .pipe ghPages()
 
-gulp.task 'default', ['clean', 'jade', 'stylus', 'coffee', 'copy', 'server']
+gulp.task 'default', ['clean', 'jade', 'stylus', 'coffee', 'copy', 'watch', 'server']
