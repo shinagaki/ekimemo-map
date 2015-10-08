@@ -13,12 +13,12 @@ paths =
     jade: './source/jade'
     stylus: './source/stylus'
     coffee: './source/coffee'
-    json: './source/json'
+    data: './source/data'
   dest:
     html: './build'
     css: './build/css'
     js: './build/js'
-    json: './build/json'
+    data: './build/data'
 
 gulp.task 'jade', ->
   gulp.src "#{paths.src.jade}/**/!(_)*.jade"
@@ -44,8 +44,8 @@ gulp.task 'coffee', ->
     .pipe gulp.dest "#{paths.dest.js}"
 
 gulp.task 'copy', ->
-  gulp.src "#{paths.src.json}/**/*"
-    .pipe gulp.dest "#{paths.dest.json}"
+  gulp.src "#{paths.src.data}/**/*"
+    .pipe gulp.dest "#{paths.dest.data}"
 
 gulp.task 'clean', (callback) ->
   del ["#{paths.dest.html}/**/*"], callback

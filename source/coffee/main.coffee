@@ -1,6 +1,6 @@
 checkedList = []
 
-main = (pointJson) ->
+main = (stations) ->
   map = new (google.maps.Map)(document.getElementById('map'),
     zoom: 13
     center: new (google.maps.LatLng)(35.659, 139.745)
@@ -15,8 +15,8 @@ main = (pointJson) ->
     markerOverlay = this
     overlayProjection = markerOverlay.getProjection()
 
-    googleMapProjection = (coordinates) ->
-      googleCoordinates = new (google.maps.LatLng)(coordinates[1], coordinates[0])
+    googleMapProjection = (lat, lng) ->
+      googleCoordinates = new (google.maps.LatLng)(lat, lng)
       pixelCoordinates = overlayProjection.fromLatLngToDivPixel(googleCoordinates)
       [
         pixelCoordinates.x + 10000
@@ -30,18 +30,18 @@ main = (pointJson) ->
     overlay.draw = ->
       bufferRange = 0.5
       bounds = map.getBounds()
-      pointdata = pointJson.features.filter((v) ->
-        v.geometry.coordinates[1] > bounds.getSouthWest().lat() - bufferRange and v.geometry.coordinates[1] < bounds.getNorthEast().lat() + bufferRange and v.geometry.coordinates[0] > bounds.getSouthWest().lng() - bufferRange and v.geometry.coordinates[0] < bounds.getNorthEast().lng() + bufferRange
-        # return bounds.contains(new google.maps.LatLng(v.geometry.coordinates[1], v.geometry.coordinates[0]));
+      pointdata = stations.filter((v) ->
+        v.lat > bounds.getSouthWest().lat() - bufferRange and v.lat < bounds.getNorthEast().lat() + bufferRange and v.lon > bounds.getSouthWest().lng() - bufferRange and v.lon < bounds.getNorthEast().lng() + bufferRange
       )
       positions = []
       pointdata.forEach (d) ->
-        positions.push googleMapProjection(d.geometry.coordinates)
+        positions.push googleMapProjection(d.lat, d.lon)
         return
       polygons = d3.geom.voronoi(positions)
+
       pathAttr = 
         'class': (d) ->
-          if checkedList.indexOf(d.properties.station_cd) != -1
+          if checkedList.indexOf(d.cd) != -1
             'cell checked'
           else
             'cell'
@@ -53,13 +53,13 @@ main = (pointJson) ->
           'M' + polygons[i].join('L') + 'Z'
       svgOverlay.selectAll('path.cell, circle, text').data(pointdata).exit().remove()
       svgOverlay.selectAll('path.cell').data(pointdata).attr(pathAttr).enter().append('svg:path').attr(pathAttr).on 'dblclick', (d) ->
-        if checkedList.indexOf(d.properties.station_cd) != -1
+        if checkedList.indexOf(d.cd) != -1
           checkedList = checkedList.filter((v) ->
-            v != d.properties.station_cd
+            v != d.cd
           )
           d3.select(this).classed 'checked', false
         else
-          checkedList.push d.properties.station_cd
+          checkedList.push d.cd
           d3.select(this).classed 'checked', true
         localStorage.setItem 'ekimemo_checkedList', JSON.stringify(checkedList)
         return
@@ -67,7 +67,11 @@ main = (pointJson) ->
         'r': '.5em'
         'stroke': '#666'
         'stroke-width': 1
-        'fill': 'red'
+        'fill': (d, i) ->
+          if +d.type == 1
+            return 'red'
+          else if +d.type == 2
+            return 'gray'
         'fill-opacity': 0.6
         'cursor': 'pointer'
         'cx': (d, i) ->
@@ -88,9 +92,9 @@ main = (pointJson) ->
         'font-family': 'Hiragino Kaku Gothic ProN, \'ヒラギノ角ゴ Pro W3\', Meiryo, \'メイリオ\''
         'pointer-events': 'none'
       svgOverlay.selectAll('text').data(pointdata).attr(textAttr).text((d, i) ->
-        d.properties.station_name
+        d.name
       ).enter().append('svg:text').attr(textAttr).text (d, i) ->
-        d.properties.station_name
+        d.name
       return
 
     return
@@ -116,6 +120,6 @@ if localStorage.getItem('ekimemo_checkedList')
   catch e
     console.log e
     checkedList = []
-d3.json './json/stations.geojson', (pointJson) ->
-  main pointJson
+d3.csv './data/stations.csv', (stations) ->
+  main stations
   return
