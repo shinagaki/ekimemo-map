@@ -1,11 +1,6 @@
 checkedList = []
 
 main = (stations) ->
-  if navigator.geolocation
-    navigator.geolocation.getCurrentPosition (position) ->
-      initMap position.coords.latitude, position.coords.longitude
-  else
-    initMap 35.659, 139.745
 
   fixInfoWindow = ->
     set = google.maps.InfoWindow::set
@@ -111,6 +106,14 @@ main = (stations) ->
           d.name
 
     overlay.setMap map
+
+  if location.hash and matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
+    initMap matches[1], matches[2]
+  else if navigator.geolocation
+    navigator.geolocation.getCurrentPosition (position) ->
+      initMap position.coords.latitude, position.coords.longitude
+  else
+    initMap 35.659, 139.745
 
 if localStorage.getItem('ekimemo_checkedList')
   try
