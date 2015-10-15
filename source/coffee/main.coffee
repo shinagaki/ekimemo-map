@@ -1,117 +1,92 @@
 checkedList = []
 
 main = (stations) ->
+  initMap = (lat, lng) ->
+    polygons = markers = []
 
-  fixInfoWindow = ->
-    set = google.maps.InfoWindow::set
-    google.maps.InfoWindow::set = (key, val) ->
-      if key == 'map'
-        if !@get('noSupress')
-          return
-      set.apply this, arguments
-
-  initMap = (lat, lon) ->
     map = new (google.maps.Map)(document.getElementById('map'),
       zoom: 13
-      center: new (google.maps.LatLng)(lat, lon)
+      center: new (google.maps.LatLng)(lat, lng)
       mapTypeId: google.maps.MapTypeId.ROADMAP
       disableDoubleClickZoom: true)
-    fixInfoWindow()
-    overlay = new (google.maps.OverlayView)
 
-    overlay.onAdd = ->
-      svg = d3.select(@getPanes().floatPane).append('div').attr('class', 'svg-overlay').append('svg')
-      svgOverlay = svg.append('g')
-      markerOverlay = this
-      overlayProjection = markerOverlay.getProjection()
+    do ->
+      set = google.maps.InfoWindow::set
+      google.maps.InfoWindow::set = (k, v) ->
+        if k == 'map'
+          if !@get('noSupress')
+            return
+        set.apply this, arguments
 
-      googleMapProjection = (lat, lng) ->
-        googleCoordinates = new (google.maps.LatLng)(lat, lng)
-        pixelCoordinates = overlayProjection.fromLatLngToDivPixel(googleCoordinates)
-        [
-          pixelCoordinates.x + 10000
-          pixelCoordinates.y + 10000
-        ]
+    google.maps.Map.prototype.clearOverlays = ->
+      polygons.forEach (v) ->
+        v.setMap null
+      markers.forEach (v) ->
+        v.setMap null
 
-      google.maps.event.addListener map, 'idle', ->
-        overlay.draw()
+    google.maps.event.addListener map, 'idle', ->
+      map.clearOverlays()
 
-      overlay.draw = ->
-        bufferRange = 0.5
-        bounds = map.getBounds()
-        pointdata = stations.filter((v) ->
-          v.lat > bounds.getSouthWest().lat() - bufferRange and v.lat < bounds.getNorthEast().lat() + bufferRange and v.lon > bounds.getSouthWest().lng() - bufferRange and v.lon < bounds.getNorthEast().lng() + bufferRange
-        )
-        positions = []
-        pointdata.forEach (d) ->
-          positions.push googleMapProjection(d.lat, d.lon)
+      bufferRange = 0.5
+      bounds = map.getBounds()
+      stationsFilter = stations.filter((v) ->
+        v.lat > bounds.getSouthWest().lat() - bufferRange and v.lat < bounds.getNorthEast().lat() + bufferRange and v.lng > bounds.getSouthWest().lng() - bufferRange and v.lng < bounds.getNorthEast().lng() + bufferRange
+      )
 
-        polygons = d3.geom.voronoi(positions)
+      voronois = d3.geom.voronoi(stationsFilter.map (v) -> [v.lat, v.lng])
 
-        pathAttr = 
-          'class': (d) ->
-            if checkedList.indexOf(d.cd) != -1
-              'cell checked'
-            else
-              'cell'
-          'stroke': 'rgba(255, 0, 0, .4)'
-          'stroke-width': 2
-          'fill': 'none'
-          'pointer-events': 'all'
-          'd': (d, i) ->
-            'M' + polygons[i].join('L') + 'Z'
-        svgOverlay.selectAll('path.cell, circle, text').data(pointdata).exit().remove()
-        svgOverlay.selectAll('path.cell').data(pointdata).attr(pathAttr).enter().append('svg:path').attr(pathAttr).on 'dblclick', (d) ->
+      stationsFilter.forEach (d, i) ->
+        paths = voronois[i].map (v) ->
+          new (google.maps.LatLng)(v[0], v[1])
+
+        if checkedList.indexOf(d.cd) != -1
+          fillColor = '#f00'
+        else
+          fillColor = 'transparent'
+
+        polygon = new google.maps.Polygon
+          paths: paths
+          strokeColor: '#f00'
+          strokeOpacity: .4
+          strokeWeight: 2
+          fillColor: fillColor
+          fillOpacity: .2
+
+        google.maps.event.addListener polygon, 'mouseover', ->
+          @setOptions
+            fillOpacity: .4
+        google.maps.event.addListener polygon, 'mouseout', ->
+          @setOptions
+            fillOpacity: .2
+        google.maps.event.addListener polygon, 'dblclick', ->
           if checkedList.indexOf(d.cd) != -1
             checkedList = checkedList.filter((v) ->
               v != d.cd
             )
-            d3.select(this).classed 'checked', false
+            @setOptions
+              fillColor: 'transparent'
           else
             checkedList.push d.cd
-            d3.select(this).classed 'checked', true
+            @setOptions
+              fillColor: '#f00'
+
           localStorage.setItem 'ekimemo_checkedList', JSON.stringify(checkedList)
 
-        circleAttr = 
-          'r': '.5em'
-          'stroke': '#666'
-          'stroke-width': 1
-          'fill': (d, i) ->
-            if +d.type == 1
-              return 'red'
-            else if +d.type == 2
-              return 'gray'
-          'fill-opacity': 0.6
-          'cursor': 'pointer'
-          'cx': (d, i) ->
-            positions[i][0]
-          'cy': (d, i) ->
-            positions[i][1]
-        svgOverlay.selectAll('circle').data(pointdata).attr(circleAttr).enter().append('svg:circle').attr circleAttr
-        textAttr = 
-          'text-anchor': 'middle'
-          'x': (d, i) ->
-            positions[i][0]
-          'y': (d, i) ->
-            positions[i][1]
-          'dy': '1.4em'
-          'fill': 'blue'
-          'font-size': '1.2em'
-          'font-weight': 'bold'
-          'font-family': 'Hiragino Kaku Gothic ProN, \'ヒラギノ角ゴ Pro W3\', Meiryo, \'メイリオ\''
-          'pointer-events': 'none'
-        svgOverlay.selectAll('text').data(pointdata).attr(textAttr).text((d, i) ->
-          d.name
-        ).enter().append('svg:text').attr(textAttr).text (d, i) ->
-          d.name
+        polygon.setMap map
+        polygons.push polygon
 
-    overlay.setMap map
+        if map.getZoom() >= 10
+          markers.push new google.maps.Marker
+            position: new (google.maps.LatLng)(d.lat, d.lng)
+            map: map
+            label: d.name
+            title: d.name
 
   if location.hash and matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
     initMap matches[1], matches[2]
   else if navigator.geolocation
     navigator.geolocation.getCurrentPosition (position) ->
-      initMap position.coords.latitude, position.coords.longitude
+      initMap position.coords.latitude, position.coords.lnggitude
   else
     initMap 35.659, 139.745
 
