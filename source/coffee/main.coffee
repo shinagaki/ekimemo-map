@@ -2,7 +2,11 @@ checkedList = []
 
 main = (stations) ->
   initMap = (lat, lng) ->
-    polygons = markers = []
+    polygons = []
+    markers = []
+    iconList = 
+      sphereRed: new google.maps.MarkerImage 'images/icon-sphere_red.png', new google.maps.Size(8, 8), new google.maps.Point(0, 0), new google.maps.Point(4, 4)
+      sphereGray: new google.maps.MarkerImage 'images/icon-sphere_gray.png', new google.maps.Size(8, 8), new google.maps.Point(0, 0), new google.maps.Point(4, 4)
 
     map = new (google.maps.Map)(document.getElementById('map'),
       zoom: 13
@@ -21,8 +25,10 @@ main = (stations) ->
     google.maps.Map.prototype.clearOverlays = ->
       polygons.forEach (v) ->
         v.setMap null
-      markers.forEach (v) ->
-        v.setMap null
+
+      if map.getZoom() < 12
+        markers.forEach (v) ->
+          v.setMap null
 
     google.maps.event.addListener map, 'idle', ->
       map.clearOverlays()
@@ -33,11 +39,14 @@ main = (stations) ->
         v.lat > bounds.getSouthWest().lat() - bufferRange and v.lat < bounds.getNorthEast().lat() + bufferRange and v.lng > bounds.getSouthWest().lng() - bufferRange and v.lng < bounds.getNorthEast().lng() + bufferRange
       )
 
-      voronois = d3.geom.voronoi(stationsFilter.map (v) -> [v.lat, v.lng])
+      voronoi = d3.geom.voronoi().clipExtent([[0, 110], [60, 170]])
+      # voronoi = d3.geom.voronoi()
+      voronois = voronoi(stationsFilter.map (v) -> [v.lat, v.lng])
 
       stationsFilter.forEach (d, i) ->
         paths = voronois[i].map (v) ->
-          new (google.maps.LatLng)(v[0], v[1])
+          if Object.keys v != 'point'
+            new (google.maps.LatLng)(v[0], v[1])
 
         if checkedList.indexOf(d.cd) != -1
           fillColor = '#f00'
@@ -75,18 +84,32 @@ main = (stations) ->
         polygon.setMap map
         polygons.push polygon
 
-        if map.getZoom() >= 10
-          markers.push new google.maps.Marker
-            position: new (google.maps.LatLng)(d.lat, d.lng)
-            map: map
-            label: d.name
-            title: d.name
+        if map.getZoom() >= 12
+          if !markers[d.cd]
+            if +d.type == 2
+              icon = iconList.sphereGray
+            else
+              icon = iconList.sphereRed
+
+            marker = new MarkerWithLabel
+              position: new (google.maps.LatLng)(d.lat, d.lng)
+              map: map
+              labelContent: d.name
+              labelAnchor: new google.maps.Point(-5, 9)
+              labelClass: 'labels'
+              icon: icon
+            markers[d.cd] = marker
+          else if markers[d.cd].getMap() == null
+            markers[d.cd].setMap map
 
   if location.hash and matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
     initMap matches[1], matches[2]
   else if navigator.geolocation
     navigator.geolocation.getCurrentPosition (position) ->
-      initMap position.coords.latitude, position.coords.lnggitude
+      if position?.coords
+        initMap position.coords.latitude, position.coords.longitude
+      else
+        initMap 35.659, 139.745
   else
     initMap 35.659, 139.745
 
