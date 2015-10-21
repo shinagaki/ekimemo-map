@@ -66,12 +66,6 @@ main = (stations) ->
           fillColor: fillColor
           fillOpacity: .2
 
-        google.maps.event.addListener polygon, 'mouseover', ->
-          @setOptions
-            fillOpacity: .4
-        google.maps.event.addListener polygon, 'mouseout', ->
-          @setOptions
-            fillOpacity: .2
         google.maps.event.addListener polygon, 'dblclick', ->
           if checkedList.indexOf(d.cd) != -1
             checkedList = checkedList.filter((v) ->
