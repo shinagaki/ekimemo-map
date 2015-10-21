@@ -1,7 +1,12 @@
+MAP_CENTER_DEFAULT =
+  lat: 35.659
+  lng: 139.745
+DISPLAY_MARKER_THRESHOLD = 11
+
 checkedList = []
 
 main = (stations) ->
-  initMap = (lat, lng) ->
+  initMap = (lat = MAP_CENTER_DEFAULT.lat, lng = MAP_CENTER_DEFAULT.lng, zoom = 13) ->
     polygons = []
     markers = []
     iconList = 
@@ -9,7 +14,7 @@ main = (stations) ->
       sphereGray: new google.maps.MarkerImage 'images/icon-sphere_gray.png', new google.maps.Size(8, 8), new google.maps.Point(0, 0), new google.maps.Point(4, 4)
 
     map = new (google.maps.Map)(document.getElementById('map'),
-      zoom: 13
+      zoom: zoom
       center: new (google.maps.LatLng)(lat, lng)
       mapTypeId: google.maps.MapTypeId.ROADMAP
       disableDoubleClickZoom: true)
@@ -26,7 +31,7 @@ main = (stations) ->
       polygons.forEach (v) ->
         v.setMap null
 
-      if map.getZoom() < 12
+      if map.getZoom() < DISPLAY_MARKER_THRESHOLD
         markers.forEach (v) ->
           v.setMap null
 
@@ -84,7 +89,7 @@ main = (stations) ->
         polygon.setMap map
         polygons.push polygon
 
-        if map.getZoom() >= 12
+        if map.getZoom() >= DISPLAY_MARKER_THRESHOLD
           if !markers[d.cd]
             if +d.type == 2
               icon = iconList.sphereGray
@@ -105,13 +110,17 @@ main = (stations) ->
   if location.hash and matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
     initMap matches[1], matches[2]
   else if navigator.geolocation
+
+    console.log navigator.geolocation
     navigator.geolocation.getCurrentPosition (position) ->
       if position?.coords
         initMap position.coords.latitude, position.coords.longitude
       else
-        initMap 35.659, 139.745
+        initMap()
+    , ->
+      initMap()
   else
-    initMap 35.659, 139.745
+    initMap()
 
 if localStorage.getItem('ekimemo_checkedList')
   try
