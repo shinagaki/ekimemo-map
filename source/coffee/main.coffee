@@ -4,6 +4,7 @@ MAP_CENTER_DEFAULT =
 DISPLAY_MARKER_THRESHOLD = 11
 
 checkedList = []
+currentLatLng = null
 
 main = (stations) ->
   initMap = (lat = MAP_CENTER_DEFAULT.lat, lng = MAP_CENTER_DEFAULT.lng, zoom = 13) ->
@@ -36,6 +37,12 @@ main = (stations) ->
           v.setMap null
 
     google.maps.event.addListener map, 'idle', ->
+      newLatLng = map.getCenter()
+      if currentLatLng and Math.abs(currentLatLng.lat() - newLatLng.lat()) < 0.2 and Math.abs(currentLatLng.lng() - newLatLng.lng()) < 0.2
+        return
+
+      currentLatLng = newLatLng
+
       map.clearOverlays()
 
       bufferRange = 0.5
@@ -104,8 +111,6 @@ main = (stations) ->
   if location.hash and matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
     initMap matches[1], matches[2]
   else if navigator.geolocation
-
-    console.log navigator.geolocation
     navigator.geolocation.getCurrentPosition (position) ->
       if position?.coords
         initMap position.coords.latitude, position.coords.longitude
