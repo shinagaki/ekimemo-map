@@ -5,6 +5,7 @@ DISPLAY_MARKER_THRESHOLD = 11
 
 checkedList = []
 currentLatLng = null
+currentZoom = null
 
 main = (stations) ->
   initMap = (lat = MAP_CENTER_DEFAULT.lat, lng = MAP_CENTER_DEFAULT.lng, zoom = 13) ->
@@ -32,16 +33,18 @@ main = (stations) ->
       polygons.forEach (v) ->
         v.setMap null
 
-      if map.getZoom() < DISPLAY_MARKER_THRESHOLD
+      if currentZoom < DISPLAY_MARKER_THRESHOLD
         markers.forEach (v) ->
           v.setMap null
 
     google.maps.event.addListener map, 'idle', ->
       newLatLng = map.getCenter()
-      if currentLatLng and Math.abs(currentLatLng.lat() - newLatLng.lat()) < 0.2 and Math.abs(currentLatLng.lng() - newLatLng.lng()) < 0.2
+      newZoom = map.getZoom()
+      if currentLatLng and Math.abs(currentLatLng.lat() - newLatLng.lat()) < 0.2 and Math.abs(currentLatLng.lng() - newLatLng.lng()) < 0.2 and currentZoom and currentZoom == newZoom
         return
 
       currentLatLng = newLatLng
+      currentZoom = newZoom
 
       map.clearOverlays()
 
@@ -64,12 +67,16 @@ main = (stations) ->
           fillColor = '#f00'
         else
           fillColor = 'transparent'
+        if currentZoom >= DISPLAY_MARKER_THRESHOLD
+          strokeWeight = 2
+        else
+          strokeWeight = 1
 
         polygon = new google.maps.Polygon
           paths: paths
           strokeColor: '#f00'
           strokeOpacity: .4
-          strokeWeight: 2
+          strokeWeight: strokeWeight
           fillColor: fillColor
           fillOpacity: .2
 
@@ -90,7 +97,7 @@ main = (stations) ->
         polygon.setMap map
         polygons.push polygon
 
-        if map.getZoom() >= DISPLAY_MARKER_THRESHOLD
+        if currentZoom >= DISPLAY_MARKER_THRESHOLD
           if !markers[d.cd]
             if +d.type == 2
               icon = iconList.sphereGray
