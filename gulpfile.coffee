@@ -47,7 +47,7 @@ gulp.task 'coffee', ->
       bare: true
     .pipe gulp.dest "#{paths.dest.js}"
 
-gulp.task 'concat', ['concat-js']
+gulp.task 'concat', ['concat-js', 'concat-css']
 
 gulp.task 'concat-js', ->
   gulp.src [
@@ -55,6 +55,13 @@ gulp.task 'concat-js', ->
   ]
   .pipe concat 'vendors.js'
   .pipe gulp.dest "#{paths.dest.js}"
+
+gulp.task 'concat-css', ->
+  gulp.src [
+    "#{paths.src.vendors}/**/*.css"
+  ]
+  .pipe concat 'vendors.css'
+  .pipe gulp.dest "#{paths.dest.css}"
 
 gulp.task 'copy', ->
   gulp.src "#{paths.src.data}/**/*"
