@@ -123,10 +123,11 @@ main = (stations) ->
             markers[d.cd].setMap map
 
     addRaderMarker = (latLng, dist, i) ->
+      bgColor = (255 - i * 10).toString(16) + (200 - i * 5).toString(16) + '33'
       raderMarkers.push new google.maps.Marker
         position: latLng
         map: map
-        icon: 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + (i + 1) + '|ff6633|000000'
+        icon: 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + (i + 1) + '|' + bgColor + '|000000'
         animation: google.maps.Animation.DROP
         clickable: false
 
@@ -162,35 +163,35 @@ main = (stations) ->
     $(".js-btn-polygon").on 'click', ->
       if $(this).hasClass('disabled')
         $(this).removeClass('disabled')
-        $(this).addClass('red')
+        $(this).addClass('teal')
         enablePolygon = true
       else
-        $(this).removeClass('red')
+        $(this).removeClass('teal')
         $(this).addClass('disabled')
         enablePolygon = false
-      redraw true
       $(".fixed-action-btn").removeClass('active')
+      redraw true
 
     $(".js-btn-marker").on 'click', ->
       if $(this).hasClass('disabled')
         $(this).removeClass('disabled')
-        $(this).addClass('red')
+        $(this).addClass('cyan')
         enableMarker = true
       else
-        $(this).removeClass('red')
+        $(this).removeClass('cyan')
         $(this).addClass('disabled')
         enableMarker = false
-      redraw true
       $(".fixed-action-btn").removeClass('active')
+      redraw true
 
     $(".js-btn-rader").on 'click', ->
       if $(this).hasClass('disabled')
         $(this).removeClass('disabled')
-        $(this).addClass('red')
+        $(this).addClass('light-blue')
         raderCenter.setPosition map.getCenter()
         raderCenter.setMap map
       else
-        $(this).removeClass('red')
+        $(this).removeClass('light-blue')
         $(this).addClass('disabled')
         raderMarkers.forEach (v) ->
           v.setMap null
