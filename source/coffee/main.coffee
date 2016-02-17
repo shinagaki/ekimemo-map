@@ -123,7 +123,7 @@ main = (stations) ->
             markers[d.cd].setMap map
 
     addRaderMarker = (latLng, dist, i) ->
-      bgColor = (255 - i * 10).toString(16) + (200 - i * 5).toString(16) + '33'
+      bgColor = (255 - i * 15).toString(16) + (220 - i * 8).toString(16) + '66'
       raderMarkers.push new google.maps.Marker
         position: latLng
         map: map
@@ -136,14 +136,14 @@ main = (stations) ->
       animation: google.maps.Animation.DROP
       draggable: true
 
-    google.maps.event.addListener raderCenter, 'dragend', (e) ->
+    useRader = (latLng) ->
       distances = []
       stationsFilter.forEach (d, i) ->
-        latLng = new (google.maps.LatLng)(d.lat, d.lng)
+        stationLatLng = new (google.maps.LatLng)(d.lat, d.lng)
         distances.push
-          dist: google.maps.geometry.spherical.computeDistanceBetween latLng, e.latLng
+          dist: Math.sqrt(Math.pow(Math.abs(d.lat - latLng.lat()), 2) + Math.pow(Math.abs(d.lng - latLng.lng()), 2))
           cd: d.cd
-          latLng: latLng
+          latLng: stationLatLng
 
       distances.sort (a, b) ->
         d3.ascending a.dist, b.dist
@@ -156,6 +156,9 @@ main = (stations) ->
         setTimeout (d, i) ->
           addRaderMarker d.latLng, d.dist, i
         , i * 150, d, i
+
+    google.maps.event.addListener raderCenter, 'dragend', (e) ->
+      useRader e.latLng
 
     google.maps.event.addListener map, 'idle', ->
       redraw()
@@ -189,6 +192,7 @@ main = (stations) ->
         $(this).removeClass('disabled')
         $(this).addClass('light-blue')
         raderCenter.setPosition map.getCenter()
+        useRader map.getCenter()
         raderCenter.setMap map
       else
         $(this).removeClass('light-blue')
@@ -198,8 +202,18 @@ main = (stations) ->
         raderCenter.setMap null
       $(".fixed-action-btn").removeClass('active')
 
-  if location.hash and matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
-    initMap matches[1], matches[2]
+  if location.hash
+    if matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
+      initMap matches[1], matches[2]
+    else
+      geocoder = new google.maps.Geocoder()
+      geocoder.geocode
+        address: location.hash.substr(1)
+      , (results, status) ->
+        if status == google.maps.GeocoderStatus.OK
+          initMap results[0].geometry.location.lat(), results[0].geometry.location.lng()
+        else
+          initMap()
   else if navigator.geolocation
     navigator.geolocation.getCurrentPosition (position) ->
       if position?.coords
