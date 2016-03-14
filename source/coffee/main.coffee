@@ -4,6 +4,8 @@ MAP_CENTER_DEFAULT =
 DISPLAY_MARKER_THRESHOLD = 11
 
 checkedList = []
+geocoder = null
+map = null
 
 main = (stations) ->
   initMap = (lat = MAP_CENTER_DEFAULT.lat, lng = MAP_CENTER_DEFAULT.lng, zoom = 13) ->
@@ -163,6 +165,10 @@ main = (stations) ->
     google.maps.event.addListener map, 'idle', ->
       redraw()
 
+    if !localStorage.getItem('ekimemo_updated') || $("#modal .update-date").data('updated') > localStorage.getItem('ekimemo_updated')
+      localStorage.setItem 'ekimemo_updated', $("#modal .update-date").data('updated')
+      $("#modal").openModal()
+
     $(".js-btn-polygon").on 'click', ->
       if $(this).hasClass('disabled')
         $(this).removeClass('disabled')
@@ -202,22 +208,29 @@ main = (stations) ->
         raderCenter.setMap null
       $(".fixed-action-btn").removeClass('active')
 
-    if !localStorage.getItem('ekimemo_updated') || $("#modal .update-date").data('updated') > localStorage.getItem('ekimemo_updated')
-      localStorage.setItem 'ekimemo_updated', $("#modal .update-date").data('updated')
-      $("#modal").openModal()
+    $(window).on 'hashchange', ->
+      changedHash()
 
-  if location.hash
+  changedHash = ->
     if matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
       initMap matches[1], matches[2]
     else
-      geocoder = new google.maps.Geocoder()
+      if !geocoder
+        geocoder = new google.maps.Geocoder()
       geocoder.geocode
         address: location.hash.substr(1)
       , (results, status) ->
         if status == google.maps.GeocoderStatus.OK
-          initMap results[0].geometry.location.lat(), results[0].geometry.location.lng()
+          if map
+            map.setCenter results[0].geometry.location
+          else
+            initMap results[0].geometry.location.lat(), results[0].geometry.location.lng()
         else
-          initMap()
+          if !map
+            initMap()
+
+  if location.hash
+    changedHash()
   else if navigator.geolocation
     navigator.geolocation.getCurrentPosition (position) ->
       if position?.coords

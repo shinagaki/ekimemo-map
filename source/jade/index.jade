@@ -25,10 +25,24 @@ html(lang="ja")
 
     #modal.modal
       .modal-content
-        h5.update-date(data-updated='20160217') アップデート情報
-        p レーダーの距離計算方法を簡易（駅メモと同じ）に変更しました [Feb 17, 2016]
+        h5.update-date(data-updated='20160314') アップデート情報
+        p
+          | URLのハッシュ（#）以下に地名または緯度経度を入れるとその地名を中心に地図を表示するようにしました
+          br
+          | 例）
+          a(href='#名古屋') 名古屋
+          | 、
+          a(href='#東京タワー') 東京タワー
+          | 、
+          a(href='#女子大') 女子大
+          | 、
+          a(href='#35,135') 北緯35度 東経135度
+          |  [Feb 17, 2016]
+        p
+          | レーダーの距離計算方法を簡易（駅メモと同じ）に変更しました
+          |  [Feb 17, 2016]
       .modal-footer
-        a.modal-action.modal-close.btn.red.waves-effect.waves-light(href='#!') OK
+        button.modal-action.modal-close.btn.red.waves-effect.waves-light OK
 
     #map
     script(src='//maps.googleapis.com/maps/api/js?key=AIzaSyD4abQe_zOs7mP-0Jk5gWQZ_JST7hSM0QM')
