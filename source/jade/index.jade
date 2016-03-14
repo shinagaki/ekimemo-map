@@ -7,6 +7,7 @@ html(lang="ja")
     link(href='//cdnjs.cloudflare.com/ajax/libs/materialize/0.97.2/css/materialize.min.css', rel='stylesheet')
     //- link(href='css/vendors.css', rel='stylesheet')
     link(href='css/main.css', rel='stylesheet')
+    meta(name='description', content='地図から最寄り駅がわかる駅メモマップ。レーダーが届く範囲を調べたり、訪問した駅を塗りつぶして記録することもできる')
   body
     .fixed-action-btn.horizontal.click-to-toggle(style='top: 10px; right: 10px; height: 0;')
       a.btn-floating.btn-large.pink.lighten-2
@@ -21,6 +22,13 @@ html(lang="ja")
           li
             a.js-btn-rader.btn-floating.disabled(title='レーダー')
               i.material-icons settings_remote
+
+    #modal.modal
+      .modal-content
+        h5.update-date(data-updated='20160217') アップデート情報
+        p レーダーの距離計算方法を簡易（駅メモと同じ）に変更しました [Feb 17, 2016]
+      .modal-footer
+        a.modal-action.modal-close.btn.red.waves-effect.waves-light(href='#!') OK
 
     #map
     script(src='//maps.googleapis.com/maps/api/js?key=AIzaSyD4abQe_zOs7mP-0Jk5gWQZ_JST7hSM0QM')

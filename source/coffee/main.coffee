@@ -202,6 +202,10 @@ main = (stations) ->
         raderCenter.setMap null
       $(".fixed-action-btn").removeClass('active')
 
+    if !localStorage.getItem('ekimemo_updated') || $("#modal .update-date").data('updated') > localStorage.getItem('ekimemo_updated')
+      localStorage.setItem 'ekimemo_updated', $("#modal .update-date").data('updated')
+      $("#modal").openModal()
+
   if location.hash
     if matches = location.hash.match /#([+-]?[\d\.]+),([+-]?[\d\.]+)/
       initMap matches[1], matches[2]
