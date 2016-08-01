@@ -154,7 +154,7 @@ main = (stations) ->
         v.setMap null
       raderMarkers = []
 
-      for d, i in distances[0..11]
+      for d, i in distances[0..13]
         setTimeout (d, i) ->
           addRaderMarker d.latLng, d.dist, i
         , i * 150, d, i
