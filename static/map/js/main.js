@@ -5,7 +5,7 @@ MAP_CENTER_DEFAULT = {
   lng: 139.745
 };
 
-DISPLAY_MARKER_THRESHOLD = 11;
+DISPLAY_MARKER_THRESHOLD = 6;
 
 checkedList = [];
 
@@ -83,6 +83,10 @@ main = function(stations) {
       map.clearOverlays();
       bufferRange = 0.5;
       bounds = map.getBounds();
+      document.getElementById('all_stations_num').textContent = stations.length;
+      document.getElementById('checked_stations_num').textContent = checkedList.length;
+	document.getElementById('checked_percentage').textContent = Math.trunc(checkedList.length / stations.length*10000)/100;
+
       stationsFilter = stations.filter(function(v) {
         return v.lat > bounds.getSouthWest().lat() - bufferRange && v.lat < bounds.getNorthEast().lat() + bufferRange && v.lng > bounds.getSouthWest().lng() - bufferRange && v.lng < bounds.getNorthEast().lng() + bufferRange;
       });
@@ -101,22 +105,22 @@ main = function(stations) {
             }
           });
           if (checkedList.indexOf(d.cd) !== -1) {
-            fillColor = '#f00';
+            fillColor = '#c00'; // 取得済みポリゴン塗りつぶし色
           } else {
             fillColor = 'transparent';
           }
           if (currentZoom >= DISPLAY_MARKER_THRESHOLD) {
-            strokeWeight = 2;
+            strokeWeight = 1;
           } else {
             strokeWeight = 1;
           }
           polygon = new google.maps.Polygon({
             paths: paths,
-            strokeColor: '#f00',
-            strokeOpacity: .4,
+            strokeColor: '#f00', // ポリゴン枠線
+            strokeOpacity: .3, // ポリゴン枠線不透明度
             strokeWeight: strokeWeight,
             fillColor: fillColor,
-            fillOpacity: .2
+            fillOpacity: .2 // 塗りつぶし不透明度
           });
           google.maps.event.addListener(polygon, 'dblclick', function() {
             if (checkedList.indexOf(d.cd) !== -1) {
@@ -144,15 +148,15 @@ main = function(stations) {
             } else {
               icon = iconList.sphereRed;
             }
-            marker = new google.maps.Marker({
-              position: new google.maps.LatLng(d.lat, d.lng),
-              map: map,
-              icon: icon,
-              title: d.name
-            });
+            if (checkedList.indexOf(d.cd) === -1) {
+              marker = new google.maps.Marker({
+                position: new google.maps.LatLng(d.lat, d.lng),
+                map: map,
+                icon: icon,
+                title: d.name
+              });
+            }
             return markers[d.cd] = marker;
-          } else if (markers[d.cd].getMap() === null) {
-            return markers[d.cd].setMap(map);
           }
         }
       });
@@ -302,7 +306,7 @@ main = function(stations) {
 };
 
 $(function() {
-  var e, error;
+  var e;
   if (localStorage.getItem('ekimemo_checkedList')) {
     try {
       checkedList = JSON.parse(localStorage.getItem('ekimemo_checkedList'));
@@ -312,7 +316,7 @@ $(function() {
       checkedList = [];
     }
   }
-  return d3.csv('./data/stations.csv', function(stations) {
+  return d3.csv('./data/stations.csv?dxx', function(stations) {
     return main(stations);
   });
 });
