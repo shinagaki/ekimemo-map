@@ -13,8 +13,10 @@
     <div>
       <a href="../">TOP</a>
       全<span id="all_stations_num"></span>駅中 <span id="checked_stations_num"></span>駅取得(<span id="checked_percentage"></span>%)
-    </div>
-    <div style="top: 10px; right: 10px; height: 0;"><a href="../">TOP</a></div> 
+
+      <input type="hidden" id="abandoned_mode" value="0" style="display: inline-block">
+      廃駅:<span id="abandoned_label" style="text-decoration: underline">含む</span>
+
     </div>
     <div style="top: 10px; right: 10px; height: 0;" class="fixed-action-btn horizontal click-to-toggle"><a class="btn-floating btn-large pink lighten-2"><i class="large mdi-navigation-menu"></i></a>
       <ul>
@@ -39,4 +41,6 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
     <script src="js/main.js?xx"></script>
   </body>
+  <script>
+  </script>
 </html>

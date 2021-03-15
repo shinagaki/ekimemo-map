@@ -7,6 +7,11 @@ MAP_CENTER_DEFAULT = {
 
 DISPLAY_MARKER_THRESHOLD = 6;
 
+// 取済済駅色
+checkedFillColor = '#f00';
+// 取済済廃駅色
+checkedAbandonedFillColor = '#888';
+
 checkedList = [];
 
 geocoder = null;
@@ -85,10 +90,29 @@ main = function(stations) {
       bounds = map.getBounds();
       document.getElementById('all_stations_num').textContent = stations.length;
       document.getElementById('checked_stations_num').textContent = checkedList.length;
-	document.getElementById('checked_percentage').textContent = Math.trunc(checkedList.length / stations.length*10000)/100;
+      document.getElementById('checked_percentage').textContent = Math.trunc(checkedList.length / stations.length*10000)/100;
 
-      stationsFilter = stations.filter(function(v) {
-        return v.lat > bounds.getSouthWest().lat() - bufferRange && v.lat < bounds.getNorthEast().lat() + bufferRange && v.lng > bounds.getSouthWest().lng() - bufferRange && v.lng < bounds.getNorthEast().lng() + bufferRange;
+      let tmp = stations.filter(function(v) {
+        let abandoned_mode = Number(document.getElementById('abandoned_mode').value);
+
+        if ( abandoned_mode===0 ){
+	  // 現行駅・廃駅両方表示
+	  return true;
+	}
+	if ( abandoned_mode===1 ){
+	  // 廃駅のみ
+	  return v.type === "2";
+	}
+	if ( abandoned_mode===2 ){
+	  // 現行駅のみ
+	  return v.type === "1";
+	}
+      });
+      stationsFilter = tmp.filter(function(v) {
+          return v.lat > bounds.getSouthWest().lat() - bufferRange
+	      && v.lat < bounds.getNorthEast().lat() + bufferRange
+	      && v.lng > bounds.getSouthWest().lng() - bufferRange
+	      && v.lng < bounds.getNorthEast().lng() + bufferRange;
       });
       if (enablePolygon) {
         voronoi = d3.geom.voronoi().clipExtent([[0, 110], [60, 170]]);
@@ -96,6 +120,8 @@ main = function(stations) {
           return [v.lat, v.lng];
         }));
       }
+
+
       return stationsFilter.forEach(function(d, i) {
         var fillColor, icon, marker, paths, polygon, strokeWeight;
         if (enablePolygon) {
@@ -105,7 +131,7 @@ main = function(stations) {
             }
           });
           if (checkedList.indexOf(d.cd) !== -1) {
-            fillColor = '#c00'; // 取得済みポリゴン塗りつぶし色
+            fillColor = +d.type===1 ? checkedFillColor : checkedAbandonedFillColor; // 取得済みポリゴン塗りつぶし色 (初期表示)
           } else {
             fillColor = 'transparent';
           }
@@ -122,6 +148,8 @@ main = function(stations) {
             fillColor: fillColor,
             fillOpacity: .2 // 塗りつぶし不透明度
           });
+
+	  // ダブルクリック時のトグル動作
           google.maps.event.addListener(polygon, 'dblclick', function() {
             if (checkedList.indexOf(d.cd) !== -1) {
               checkedList = checkedList.filter(function(v) {
@@ -133,11 +161,12 @@ main = function(stations) {
             } else {
               checkedList.push(d.cd);
               this.setOptions({
-                fillColor: '#f00'
+                  fillColor: +d.type===1 ? checkedFillColor : checkedAbandonedFillColor // 取得済み駅塗りつぶし (ダブルクリック時)
               });
             }
             return localStorage.setItem('ekimemo_checkedList', JSON.stringify(checkedList));
           });
+
           polygon.setMap(map);
           polygons.push(polygon);
         }
@@ -206,6 +235,15 @@ main = function(stations) {
       }
       return results1;
     };
+    // 廃駅モード切り替え
+      document.getElementById("abandoned_label").onclick = function(event){
+        let labels = ['含む','のみ','除く'];
+	let e = document.getElementById("abandoned_mode");
+	let next_abandoned_mode = (Number(e.value)+1)%3;
+	e.value = next_abandoned_mode;
+        event.target.innerText = labels[next_abandoned_mode];
+	  return init();
+    };
     google.maps.event.addListener(raderCenter, 'dragend', function(e) {
       return useRader(e.latLng);
     });
@@ -216,6 +254,7 @@ main = function(stations) {
       localStorage.setItem('ekimemo_updated', $("#modal .update-date").data('updated'));
       $("#modal").openModal();
     }
+    // ポリゴンボタンクリック (トグル)
     $(".js-btn-polygon").on('click', function() {
       if ($(this).hasClass('disabled')) {
         $(this).removeClass('disabled');
@@ -229,6 +268,7 @@ main = function(stations) {
       $(".fixed-action-btn").removeClass('active');
       return redraw(true);
     });
+    // マーカーボタンクリック (トグル)
     $(".js-btn-marker").on('click', function() {
       if ($(this).hasClass('disabled')) {
         $(this).removeClass('disabled');
@@ -242,6 +282,7 @@ main = function(stations) {
       $(".fixed-action-btn").removeClass('active');
       return redraw(true);
     });
+    // レーダーボタンクリック
     $(".js-btn-rader").on('click', function() {
       if ($(this).hasClass('disabled')) {
         $(this).removeClass('disabled');
@@ -305,7 +346,7 @@ main = function(stations) {
   }
 };
 
-$(function() {
+function init(){
   var e;
   if (localStorage.getItem('ekimemo_checkedList')) {
     try {
@@ -316,7 +357,11 @@ $(function() {
       checkedList = [];
     }
   }
-  return d3.csv('./data/stations.csv?dxx', function(stations) {
+  return d3.csv('./data/stations.csv?dxxx', function(stations) {
     return main(stations);
   });
+}
+
+$(function() {
+    init();
 });

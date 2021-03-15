@@ -8,8 +8,8 @@ resource "google_storage_bucket" "em2-site" {
 }
 
 
-#resource "google_storage_bucket_iam_member" "em2-site-iam" {
-#  bucket = google_storage_bucket.em2-site.name
-#  role = "roles/storage.objectViewer"
-#  member = "allUsers"
-#}
+resource "google_storage_bucket_iam_member" "em2-site-iam" {
+  bucket = google_storage_bucket.em2-site.name
+  role = "roles/storage.objectViewer"
+  member = "allUsers"
+}
