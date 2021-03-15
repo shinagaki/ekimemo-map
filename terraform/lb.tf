@@ -4,20 +4,34 @@ resource "google_compute_global_address" "lb-static-ip" {
   address_type = "EXTERNAL"
 }
 
-resource "google_compute_global_forwarding_rule" "http" {
-  name       = "global-rule"
+resource "google_compute_global_forwarding_rule" "https" {
+  name       = "https-rule"
   target     = google_compute_target_https_proxy.default.self_link
   port_range = "443"
   ip_address = google_compute_global_address.lb-static-ip.address
   depends_on = [google_compute_global_address.lb-static-ip]
 }
 
+
+resource "google_compute_global_forwarding_rule" "http" {
+  name       = "http-rule"
+  target     = google_compute_target_http_proxy.default.self_link
+  port_range = "80"
+  ip_address = google_compute_global_address.lb-static-ip.address
+  depends_on = [google_compute_global_address.lb-static-ip]
+}
+
 resource "google_compute_target_https_proxy" "default" {
   name    = "target-proxy"
-  url_map = google_compute_url_map.default.self_link
+  url_map = google_compute_url_map.https.self_link
   ssl_certificates = [
     google_compute_managed_ssl_certificate.default.id
   ]
+}
+
+resource "google_compute_target_http_proxy" "default" {
+  name    = "target-proxy"
+  url_map = google_compute_url_map.http.self_link
 }
 
 
@@ -37,23 +51,19 @@ resource "google_compute_managed_ssl_certificate" "default" {
 # ------------------------------------------------------------------------------
 # URL MAP
 # ------------------------------------------------------------------------------
-resource "google_compute_url_map" "default" {
+resource "google_compute_url_map" "https" {
   name            = "em2-lb"
   description     = "a description"
   default_service = google_compute_backend_bucket.em2-backend.id
+}
 
-  # GCSのbucketをbackendに追加
-  #  host_rule {
-  #    hosts        = ["*"]
-  #    path_matcher = "mysite"
-  #  }
-
-  #  path_matcher {
-  #    name            = "mysite"
-  #    default_service = google_compute_backend_service.default.self_link
-  #  }
-  depends_on = []
-
+resource "google_compute_url_map" "http" {
+  name            = "http-redirect"
+  default_url_redirect {
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    https_redirect         = true
+    strip_query            = true
+  }
 }
 
 

@@ -177,7 +177,7 @@ main = function(stations) {
             } else {
               icon = iconList.sphereRed;
             }
-            if (checkedList.indexOf(d.cd) === -1) {
+            if (+d.type === 2 || checkedList.indexOf(d.cd) === -1) {
               marker = new google.maps.Marker({
                 position: new google.maps.LatLng(d.lat, d.lng),
                 map: map,
