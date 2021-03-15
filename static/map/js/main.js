@@ -23,13 +23,31 @@ main = function(stations) {
   initMap = function(lat, lng, zoom) {
     var addRaderMarker, currentLatLng, currentZoom, enableMarker, enablePolygon, iconList, markers, polygons, raderCenter, raderMarkers, redraw, stationsFilter, useRader;
     if (lat == null) {
-      lat = MAP_CENTER_DEFAULT.lat;
+      let oldLat = localStorage.getItem('ekimemo_lat');
+      if ( oldLat != null && oldLat !== undefined ){
+        lat = oldLat;
+      } else {
+        lat = MAP_CENTER_DEFAULT.lat;
+      }
     }
+
     if (lng == null) {
-      lng = MAP_CENTER_DEFAULT.lng;
+      let oldLng = localStorage.getItem('ekimemo_lng');
+      if ( oldLng != null && oldLng !== undefined ){
+        lng = oldLng;
+      } else {
+        lng = MAP_CENTER_DEFAULT.lng;
+      }
     }
     if (zoom == null) {
-      zoom = 13;
+      let oldZoom = localStorage.getItem('ekimemo_zoom');
+      console.log(oldZoom);
+      if ( oldZoom != null && oldZoom !== undefined ){
+        zoom = Number(oldZoom);
+//  zoom=13;
+      } else {
+        zoom = 13;
+      }
     }
     polygons = [];
     markers = [];
@@ -75,11 +93,17 @@ main = function(stations) {
     };
     redraw = function(force) {
       var bounds, bufferRange, newLatLng, newZoom, voronoi, voronois;
+      newLatLng = map.getCenter();
+      newZoom = map.getZoom();
+
+      // 最新の座標とズームを localStorage に保存
+      localStorage.setItem('ekimemo_lat', newLatLng.lat());
+      localStorage.setItem('ekimemo_lng', newLatLng.lng());
+      localStorage.setItem('ekimemo_zoom', newZoom);
+
       if (force == null) {
         force = false;
       }
-      newLatLng = map.getCenter();
-      newZoom = map.getZoom();
       if (!force && currentLatLng && Math.abs(currentLatLng.lat() - newLatLng.lat()) < 0.2 && Math.abs(currentLatLng.lng() - newLatLng.lng()) < 0.2 && currentZoom && currentZoom === newZoom) {
         return;
       }
@@ -96,23 +120,23 @@ main = function(stations) {
         let abandoned_mode = Number(document.getElementById('abandoned_mode').value);
 
         if ( abandoned_mode===0 ){
-	  // 現行駅・廃駅両方表示
-	  return true;
-	}
-	if ( abandoned_mode===1 ){
-	  // 廃駅のみ
-	  return v.type === "2";
-	}
-	if ( abandoned_mode===2 ){
-	  // 現行駅のみ
-	  return v.type === "1";
-	}
+          // 現行駅・廃駅両方表示
+          return true;
+        }
+        if ( abandoned_mode===1 ){
+          // 廃駅のみ
+          return v.type === "2";
+        }
+        if ( abandoned_mode===2 ){
+          // 現行駅のみ
+          return v.type === "1";
+        }
       });
       stationsFilter = tmp.filter(function(v) {
-          return v.lat > bounds.getSouthWest().lat() - bufferRange
-	      && v.lat < bounds.getNorthEast().lat() + bufferRange
-	      && v.lng > bounds.getSouthWest().lng() - bufferRange
-	      && v.lng < bounds.getNorthEast().lng() + bufferRange;
+        return v.lat > bounds.getSouthWest().lat() - bufferRange
+          && v.lat < bounds.getNorthEast().lat() + bufferRange
+          && v.lng > bounds.getSouthWest().lng() - bufferRange
+          && v.lng < bounds.getNorthEast().lng() + bufferRange;
       });
       if (enablePolygon) {
         voronoi = d3.geom.voronoi().clipExtent([[0, 110], [60, 170]]);
@@ -149,7 +173,7 @@ main = function(stations) {
             fillOpacity: .2 // 塗りつぶし不透明度
           });
 
-	  // ダブルクリック時のトグル動作
+          // ダブルクリック時のトグル動作
           google.maps.event.addListener(polygon, 'dblclick', function() {
             if (checkedList.indexOf(d.cd) !== -1) {
               checkedList = checkedList.filter(function(v) {
@@ -236,13 +260,13 @@ main = function(stations) {
       return results1;
     };
     // 廃駅モード切り替え
-      document.getElementById("abandoned_label").onclick = function(event){
-        let labels = ['含む','のみ','除く'];
-	let e = document.getElementById("abandoned_mode");
-	let next_abandoned_mode = (Number(e.value)+1)%3;
-	e.value = next_abandoned_mode;
-        event.target.innerText = labels[next_abandoned_mode];
-	  return init();
+    document.getElementById("abandoned_label").onclick = function(event){
+      let labels = ['含む','のみ','除く'];
+      let e = document.getElementById("abandoned_mode");
+      let next_abandoned_mode = (Number(e.value)+1)%3;
+      e.value = next_abandoned_mode;
+      event.target.innerText = labels[next_abandoned_mode];
+      return init();
     };
     google.maps.event.addListener(raderCenter, 'dragend', function(e) {
       return useRader(e.latLng);
@@ -334,7 +358,9 @@ main = function(stations) {
   } else if (navigator.geolocation) {
     return navigator.geolocation.getCurrentPosition(function(position) {
       if (position != null ? position.coords : void 0) {
-        return initMap(position.coords.latitude, position.coords.longitude);
+        // リロードのたびに位置がクリアされるのはよろしくないので、とりあえず現在位置の取得は外す
+        //        return initMap(position.coords.latitude, position.coords.longitude);
+        return initMap();
       } else {
         return initMap();
       }
