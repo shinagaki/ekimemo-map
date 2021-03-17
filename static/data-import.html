@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <title>駅メモマップ2 データインポート</title>
+  </head>
+  <body>
+    <p>
+      このページで「駅メモマップ2」のデータをインポートすることができます。
+    </p>
+    <p>
+      <a href="data-export.html">エクスポート</a> で保存したデータをこの下にあるテキストエリアに貼り付けして、「インポート」ボタンを押してください。
+    </p>
+    <div>
+      <textarea id="display-area" style="width: 50%; height: 140px"></textarea>
+    </div>
+    <div>
+      <input type="button" id="import-button" value="インポート">
+    </div>
+    <p id="msg"></p>
+  </body>
+  <script>
+    document.querySelector("#import-button").onclick = function() {
+	localStorage.setItem('ekimemo_checkedList', document.querySelector('#display-area').value);
+	document.querySelector("#msg").innerHTML = '設定完了です。<a href="map/">マップ画面</a> で取得済み駅情報が正しく表示されているか確認してください。';
+    };
+  </script>
+</html>

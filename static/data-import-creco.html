@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <title>駅メモマップデータ移行</title>
+  </head>
+  <body>
+    <p>
+      このページで「駅メモマップ」から「駅メモマップ2」へのデータ移行を行うことができます。
+    </p>
+    <p>
+      前ページでコピーしたデータをこの下にあるテキストエリアに貼り付けして、「駅メモマップ2に設定」ボタンを押してください。
+    </p>
+    <div>
+      <textarea id="display-area" style="width: 50%; height: 140px"></textarea>
+    </div>
+    <div>
+      <input type="button" id="import-button" value="駅メモマップ2に設定">
+    </div>
+    <p id="msg"></p>
+  </body>
+  <script>
+    document.querySelector("#import-button").onclick = function() {
+	localStorage.setItem('ekimemo_checkedList', document.querySelector('#display-area').value);
+	document.querySelector("#msg").innerHTML = '設定完了です。<a href="map/">マップ画面</a> で取得済み駅情報が正しく表示されているか確認してください。';
+    };
+  </script>
+</html>

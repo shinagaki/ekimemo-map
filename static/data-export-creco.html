@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <title>駅メモマップデータ移行</title>
+  </head>
+  <body>
+    <p>
+      このページで「駅メモマップ」から「駅メモマップ2」へのデータ移行を行うことができます。
+    </p>
+    <p>
+      現在お使いのブラウザに保存されている駅データは下記のとおりです (駅メモマップ用のデータがこのブラウザに設定されていない場合、何も表示されません)。
+    </p>
+    <div>
+      <textarea id="display-area" style="width: 50%; height: 140px"></textarea>
+    </div>
+    <div>
+      <input type="button" id="copy-button" value="クリップボードにコピー">
+    </div>
+    <p>
+      「クリップボードにコピー」ボタンを押してください。
+    </p>
+    <p id="msg"></p>
+  </body>
+  <script>
+    let ekimemo_checkedList = localStorage.getItem('ekimemo_checkedList');
+    console.log(document.querySelector('#display-area'));
+    console.log(ekimemo_checkedList);
+    let display_area = document.querySelector('#display-area');
+    display_area.textContent = ekimemo_checkedList;
+
+    document.querySelector("#copy-button").onclick = function() {
+	let display_area = document.querySelector('#display-area');
+	display_area.select();
+	document.execCommand("Copy");
+	document.querySelector("#msg").innerHTML = 'コピーが完了しました。<a href="https://ekimemo-map2.net/data-import-creco.html">駅メモマップ2 データ移行ページ</a> でデータ移行をしてください。';
+    };
+  </script>
+</html>
