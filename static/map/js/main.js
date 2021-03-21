@@ -10,15 +10,28 @@ DISPLAY_MARKER_THRESHOLD = 6;
 // 取済済駅色
 checkedFillColor = '#f00';
 // 取済済廃駅色
-checkedAbandonedFillColor = '#888';
+checkedAbandonedFillColor = '#f00';
 
 checkedList = [];
 
 geocoder = null;
-
+currentPrefCode = null;
 map = null;
 
-main = function(stations) {
+main = function(stations, stationPrefs, prefs) {
+  var stationPrefs = d3.map(stationPrefs, function(v){
+    return v.station_code;
+  });
+
+  // 都道府県プルダウン設定
+  var select = document.querySelector('#pref');
+  prefs.forEach(function(v) {
+    var option = document.createElement('option');
+    option.value = v.pref_code;
+    option.text = v.pref_name+"("+v.ekimemo_count+"駅)";
+    select.appendChild(option);
+  });
+
   var changedHash, initMap;
   initMap = function(lat, lng, zoom) {
     var addRaderMarker, currentLatLng, currentZoom, enableMarker, enablePolygon, iconList, markers, polygons, raderCenter, raderMarkers, redraw, stationsFilter, useRader;
@@ -41,7 +54,6 @@ main = function(stations) {
     }
     if (zoom == null) {
       let oldZoom = localStorage.getItem('ekimemo_zoom');
-      console.log(oldZoom);
       if ( oldZoom != null && oldZoom !== undefined ){
         zoom = Number(oldZoom);
 //  zoom=13;
@@ -49,6 +61,7 @@ main = function(stations) {
         zoom = 13;
       }
     }
+
     polygons = [];
     markers = [];
     raderMarkers = [];
@@ -67,8 +80,45 @@ main = function(stations) {
       center: new google.maps.LatLng(lat, lng),
       mapTypeId: google.maps.MapTypeId.ROADMAP,
       streetViewControl: false,
-      disableDoubleClickZoom: true
+      disableDoubleClickZoom: true,  // ダブルクリックでのズーム無効化
+      fullscreenControl: false,  // フルスクリーンアイコン非表示
+
+      styles:[
+	{
+	  featureType:'administrative.province',//学校関連
+	  elementType:'geometry',//
+	  stylers:[{color: '#000000',
+		    weight: 2,
+		    // weight:0.2, lightness:0.1
+		   }]
+	},
+	{
+	  featureType:'transit.line',//
+	  elementType:'geometry.stroke',//
+	  stylers:[{ color: '#0000cc',
+		     lightness:0
+		    //weight:0.2,
+		   }]
+	},
+	{
+	  featureType:'transit.station.rail',//
+	  elementType:'geometry',//
+	  stylers:[{ color: '#00ffcc',
+		     lightness:0,
+		     visibility: 'on',
+		    //weight:0.2,
+		   }]
+	},
+      ],
+//      featureType: "administrative.province",
+//      stylers:[{color: '#ff0004' }],
+//      travelMode: google.maps.TravelMode.TRANSIT,
+//      transitOptions: {
+//	modes: [google.maps.TransitMode.TRAIN]
+//      },
     });
+
+    // 何のためのコードかわからない。
     (function() {
       var set;
       set = google.maps.InfoWindow.prototype.set;
@@ -81,16 +131,53 @@ main = function(stations) {
         return set.apply(this, arguments);
       };
     })();
+
+    // ポリゴン・マーカークリア
     google.maps.Map.prototype.clearOverlays = function() {
+      console.dir("START clearOverlays ===============");
+      var polygonsCleared = 0;
+      var markersCleared = 0;
+      var noPolygonsCleared = 0;
+      var noMarkersCleared = 0;
+//      console.dir("polygons:");
+//      console.dir(polygons);
+      console.dir("polygons len: "+Object.keys(polygons).length);
+
       polygons.forEach(function(v) {
-        return v.setMap(null);
-      });
-      if (!enableMarker || currentZoom < DISPLAY_MARKER_THRESHOLD) {
-        return markers.forEach(function(v) {
+	if ( v && v.setMap ){
+	  polygonsCleared++;
           return v.setMap(null);
+	} else {
+	  noPolygonsCleared++;
+	}
+      });
+//      console.dir("markers:");
+//      console.dir(markers);
+      console.dir("markers len: "+Object.keys(markers).length);
+      if (!enableMarker || currentZoom < DISPLAY_MARKER_THRESHOLD) {
+//      if (!enableMarker ){
+//      if (true){
+        return markers.forEach(function(v) {
+	  if ( v && v.setMap ){
+	    markersCleared++;
+            return v.setMap(null);
+	  } else {
+	    noMarkersCleared++;
+	  }
         });
+      } else {
+	console.dir("! enableMarker");
       }
+//      markers = [];
+//      polygons = [];
+      console.dir("after polygons: " + Object.keys(polygons).length);
+      console.dir("after polygonsCleared: " + polygonsCleared);
+      console.dir("after noPolygonsCleared: " + noPolygonsCleared);
+      console.dir("after markers: " + Object.keys(markers).length);
+      console.dir("after markersCleared: " + markersCleared);
+      console.dir("after noMarkersCleared: " + noMarkersCleared);
     };
+    //
     redraw = function(force) {
       var bounds, bufferRange, newLatLng, newZoom, voronoi, voronois;
       newLatLng = map.getCenter();
@@ -101,21 +188,32 @@ main = function(stations) {
       localStorage.setItem('ekimemo_lng', newLatLng.lng());
       localStorage.setItem('ekimemo_zoom', newZoom);
 
+      document.getElementById('all_stations_num').textContent = stations.length;
+      document.getElementById('checked_stations_num').textContent = checkedList.length;
+      document.getElementById('checked_percentage').textContent = Math.trunc(checkedList.length / stations.length*10000)/100;
+
       if (force == null) {
         force = false;
       }
-      if (!force && currentLatLng && Math.abs(currentLatLng.lat() - newLatLng.lat()) < 0.2 && Math.abs(currentLatLng.lng() - newLatLng.lng()) < 0.2 && currentZoom && currentZoom === newZoom) {
+
+      // force でない、経度/緯度の変更が少ない、zoom レベル変動なし をすべて満たす場合、
+      // 再描画の必要なしとして戻る。
+      if (!force && currentLatLng &&
+	  Math.abs(currentLatLng.lat() - newLatLng.lat()) < 0.2 &&
+	  Math.abs(currentLatLng.lng() - newLatLng.lng()) < 0.2 &&
+	  currentZoom && currentZoom === newZoom) {
+
         return;
       }
       currentLatLng = newLatLng;
       currentZoom = newZoom;
       map.clearOverlays();
+//      polygons = [];
+//      markers = [];
       bufferRange = 0.5;
       bounds = map.getBounds();
-      document.getElementById('all_stations_num').textContent = stations.length;
-      document.getElementById('checked_stations_num').textContent = checkedList.length;
-      document.getElementById('checked_percentage').textContent = Math.trunc(checkedList.length / stations.length*10000)/100;
 
+      console.log("stations.filter");
       let tmp = stations.filter(function(v) {
         let abandoned_mode = Number(document.getElementById('abandoned_mode').value);
 
@@ -133,10 +231,20 @@ main = function(stations) {
         }
       });
       stationsFilter = tmp.filter(function(v) {
-        return v.lat > bounds.getSouthWest().lat() - bufferRange
-          && v.lat < bounds.getNorthEast().lat() + bufferRange
-          && v.lng > bounds.getSouthWest().lng() - bufferRange
-          && v.lng < bounds.getNorthEast().lng() + bufferRange;
+	if ( ! ( v.lat > bounds.getSouthWest().lat() - bufferRange
+		 && v.lat < bounds.getNorthEast().lat() + bufferRange
+		 && v.lng > bounds.getSouthWest().lng() - bufferRange
+		 && v.lng < bounds.getNorthEast().lng() + bufferRange ) ){
+	  return false;
+	}
+
+	if ( currentPrefCode !== null ){
+	  if ( ! stationPrefs.has(v.cd) || currentPrefCode !== stationPrefs.get(v.cd).pref_code ){
+	    return false;
+	  }
+	}
+//	console.dir("OK v.cd="+v.cd);
+	return true;
       });
       if (enablePolygon) {
         voronoi = d3.geom.voronoi().clipExtent([[0, 110], [60, 170]]);
@@ -144,7 +252,6 @@ main = function(stations) {
           return [v.lat, v.lng];
         }));
       }
-
 
       return stationsFilter.forEach(function(d, i) {
         var fillColor, icon, marker, paths, polygon, strokeWeight;
@@ -173,7 +280,7 @@ main = function(stations) {
             fillOpacity: .2 // 塗りつぶし不透明度
           });
 
-          // ダブルクリック時のトグル動作
+          // ポリゴンダブルクリック時のトグル動作 (駅取得/クリア)
           google.maps.event.addListener(polygon, 'dblclick', function() {
             if (checkedList.indexOf(d.cd) !== -1) {
               checkedList = checkedList.filter(function(v) {
@@ -188,12 +295,17 @@ main = function(stations) {
                   fillColor: +d.type===1 ? checkedFillColor : checkedAbandonedFillColor // 取得済み駅塗りつぶし (ダブルクリック時)
               });
             }
+            redraw();
             return localStorage.setItem('ekimemo_checkedList', JSON.stringify(checkedList));
           });
 
           polygon.setMap(map);
-          polygons.push(polygon);
+//          polygons.push(polygon);
+          polygons[d.cd]=polygon;
         }
+	document.querySelector('#polygons_num').textContent = Object.keys(polygons).length;
+	document.querySelector('#markers_num').textContent = Object.keys(markers).length;
+
         if (enableMarker && currentZoom >= DISPLAY_MARKER_THRESHOLD) {
           if (!markers[d.cd]) {
             if (+d.type === 2) {
@@ -201,12 +313,23 @@ main = function(stations) {
             } else {
               icon = iconList.sphereRed;
             }
-            if (+d.type === 2 || checkedList.indexOf(d.cd) === -1) {
+	    // 廃駅か、通常駅で未取得か、都道府県絞り込み中ならマーカー表示
+            if (+d.type === 2 || checkedList.indexOf(d.cd) === -1 || currentPrefCode ) {
               marker = new google.maps.Marker({
                 position: new google.maps.LatLng(d.lat, d.lng),
                 map: map,
                 icon: icon,
-                title: d.name
+                title: d.name,
+
+		/*
+		label: {
+		  text: d.name,
+		  color: '#ff0000',
+		  fontFamily: 'sans-serif',
+		  fontWeight: 'bold',
+		  fontSize: '14px',
+		}
+		*/
               });
             }
             return markers[d.cd] = marker;
@@ -259,6 +382,28 @@ main = function(stations) {
       }
       return results1;
     };
+    // 都道府県切り替え
+    document.getElementById("pref").onchange = function(event){
+      let select = document.getElementById("pref");
+      currentPrefCode = select.options[select.selectedIndex].value;
+      if ( currentPrefCode === "" ){
+	currentPrefCode = null;
+      } else {
+	prefs.forEach(function(v) {
+	  if ( currentPrefCode == v.pref_code ){
+	    localStorage.setItem('ekimemo_lat', v.lat);
+	    localStorage.setItem('ekimemo_lng', v.lng);
+	  }
+	});
+      }
+      return initMap();
+      if ( false ){
+	map.clearOverlays();
+	polygons = [];
+	markers = [];
+	return redraw(true);
+      }
+    };
     // 廃駅モード切り替え
     document.getElementById("abandoned_label").onclick = function(event){
       let labels = ['含む','のみ','除く'];
@@ -266,25 +411,32 @@ main = function(stations) {
       let next_abandoned_mode = (Number(e.value)+1)%3;
       e.value = next_abandoned_mode;
       event.target.innerText = labels[next_abandoned_mode];
-      return init();
+      return initMap();
     };
     google.maps.event.addListener(raderCenter, 'dragend', function(e) {
       return useRader(e.latLng);
     });
+
+    // マップ移動・ズームなどを行ったあと、処理に余裕ができた (idle) ら再描画
     google.maps.event.addListener(map, 'idle', function() {
       return redraw();
     });
+
     if (!localStorage.getItem('ekimemo_updated') || $("#modal .update-date").data('updated') > localStorage.getItem('ekimemo_updated')) {
       localStorage.setItem('ekimemo_updated', $("#modal .update-date").data('updated'));
       $("#modal").openModal();
     }
     // ポリゴンボタンクリック (トグル)
+    $(".js-btn-polygon").off('click');
     $(".js-btn-polygon").on('click', function() {
+      console.log("polygon-click");
       if ($(this).hasClass('disabled')) {
+	console.log("polygon change to enable");
         $(this).removeClass('disabled');
         $(this).addClass('teal');
         enablePolygon = true;
       } else {
+	console.log("polygon change to disable");
         $(this).removeClass('teal');
         $(this).addClass('disabled');
         enablePolygon = false;
@@ -293,12 +445,16 @@ main = function(stations) {
       return redraw(true);
     });
     // マーカーボタンクリック (トグル)
+    $(".js-btn-marker").off('click');
     $(".js-btn-marker").on('click', function() {
+      console.log("marker-click");
       if ($(this).hasClass('disabled')) {
+	console.log("marker change to enable");
         $(this).removeClass('disabled');
         $(this).addClass('cyan');
         enableMarker = true;
       } else {
+	console.log("marker change to disable");
         $(this).removeClass('cyan');
         $(this).addClass('disabled');
         enableMarker = false;
@@ -375,6 +531,7 @@ main = function(stations) {
 function init(){
   var e;
   if (localStorage.getItem('ekimemo_checkedList')) {
+    // 不正な JSON 形式であった場合のチェック
     try {
       checkedList = JSON.parse(localStorage.getItem('ekimemo_checkedList'));
     } catch (error) {
@@ -383,8 +540,13 @@ function init(){
       checkedList = [];
     }
   }
-  return d3.csv('./data/stations.csv?dxxx', function(stations) {
-    return main(stations);
+
+  return d3.csv('./data/stations.csv?xx', function(stations) {
+    d3.csv('./data/station_pref.csv?xxxxx', function(stationPrefs){
+      d3.csv('./data/prefs_ekimemo.csv?x', function(prefs){
+	return main(stations, stationPrefs, prefs);
+      })
+    })
   });
 }
 
