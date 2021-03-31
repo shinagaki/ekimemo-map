@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link href="//fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="//cdnjs.cloudflare.com/ajax/libs/materialize/0.97.2/css/materialize.min.css" rel="stylesheet">
-    <link href="css/main.css?x" rel="stylesheet">
+    <link href="css/main.css?xx" rel="stylesheet">
     <meta name="description" content="地図から最寄り駅がわかる駅メモマップ。レーダーが届く範囲を調べたり、訪問した駅を塗りつぶして記録することもできる">
   </head>
   <body>
@@ -14,15 +14,28 @@
       <a href="../">TOP</a>
       &nbsp; &nbsp; &nbsp;
       <input type="hidden" id="abandoned_mode" value="0" style="display: inline-block">
-      &nbsp; &nbsp; &nbsp;
-      廃駅:<span id="abandoned_label" style="text-decoration: underline">含む</span>
+      &nbsp; &nbsp;
+
+      廃駅
+      <select id="abandoned" style="display: inline-block; width: 80px; background-color: #efe; height: 30px;">
+        <option value="0">含む</option>
+        <option value="1">のみ</option>
+        <option value="2">除く</option>
+      </select>
+
       <!--      駅名または座標 <input type="a" value="">-->
-      &nbsp; &nbsp; &nbsp;
+      &nbsp; &nbsp;
       都道府県
-      <select id="pref"  style="display: inline-block; width: 200px; background-color: #efe">
+      <select id="pref"  style="display: inline-block; width: 130px; background-color: #efe; height: 30px;">
         <option></option>
       </select>
-      &nbsp; &nbsp; &nbsp;
+
+
+      駅名<input id="searchbox" type="text" value="" style="display: inline-block; width: 100px;  background-color: #efe; height: 30px;">
+      <select id="searchbox_detail" style="display: none; width: 100px; background-color: #efe; height: 30px;">
+      </select>
+      
+      <br>
       <span id="all_stations_num"></span>駅中 <span id="checked_stations_num"></span>駅取得(<span id="checked_percentage"></span>%)
       &nbsp; &nbsp; &nbsp;
 
@@ -53,6 +66,6 @@
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="///cdnjs.cloudflare.com/ajax/libs/materialize/0.97.2/js/materialize.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-    <script src="js/main.js?xxxx"></script>
+    <script src="js/main.js?xxxxx"></script>
   </body>
 </html>

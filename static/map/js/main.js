@@ -178,14 +178,21 @@ main = function(stations, stationPrefs, prefs) {
       console.dir("after noMarkersCleared: " + noMarkersCleared);
     };
     //
+
     redraw = function(force) {
       var bounds, bufferRange, newLatLng, newZoom, voronoi, voronois;
       newLatLng = map.getCenter();
       newZoom = map.getZoom();
 
       // 最新の座標とズームを localStorage に保存
-      localStorage.setItem('ekimemo_lat', newLatLng.lat());
-      localStorage.setItem('ekimemo_lng', newLatLng.lng());
+      if ( newLatLng ){
+	localStorage.setItem('ekimemo_lat', newLatLng.lat());
+	localStorage.setItem('ekimemo_lng', newLatLng.lng());
+      } else {
+	localStorage.setItem('ekimemo_lat', MAP_CENTER_DEFAULT.lat);
+	localStorage.setItem('ekimemo_lng', MAP_CENTER_DEFAULT.lng);
+      }
+
       localStorage.setItem('ekimemo_zoom', newZoom);
 
       document.getElementById('all_stations_num').textContent = stations.length;
@@ -215,17 +222,16 @@ main = function(stations, stationPrefs, prefs) {
 
       console.log("stations.filter");
       let tmp = stations.filter(function(v) {
-        let abandoned_mode = Number(document.getElementById('abandoned_mode').value);
+	let select = document.getElementById('abandoned');
+        let abandoned_mode = select.options[select.selectedIndex].value;
 
-        if ( abandoned_mode===0 ){
+        if ( abandoned_mode==='0' ){
           // 現行駅・廃駅両方表示
           return true;
-        }
-        if ( abandoned_mode===1 ){
+        } else if ( abandoned_mode==='1' ){
           // 廃駅のみ
           return v.type === "2";
-        }
-        if ( abandoned_mode===2 ){
+        } else if ( abandoned_mode==='2' ){
           // 現行駅のみ
           return v.type === "1";
         }
@@ -404,15 +410,79 @@ main = function(stations, stationPrefs, prefs) {
 	return redraw(true);
       }
     };
-    // 廃駅モード切り替え
-    document.getElementById("abandoned_label").onclick = function(event){
-      let labels = ['含む','のみ','除く'];
-      let e = document.getElementById("abandoned_mode");
-      let next_abandoned_mode = (Number(e.value)+1)%3;
-      e.value = next_abandoned_mode;
-      event.target.innerText = labels[next_abandoned_mode];
+
+    document.getElementById("searchbox_detail").onchange = function(event){
+      var detail = document.getElementById("searchbox_detail");
+      var v = detail.options[detail.selectedIndex].value;
+      console.dir(v);
+      var lat = v.split(',')[1];
+      var lng = v.split(',')[2];
+      console.dir(lat);
+      console.dir(lng);
+      
+      localStorage.setItem('ekimemo_lat', lat);
+      localStorage.setItem('ekimemo_lng', lng);
+      var latlng = new google.maps.LatLng(lat, lng);
+      map.setCenter(latlng);
+      //      localStorage.setItem('ekimemo_zoom', 3);
+      map.setZoom(13);
+    };
+
+    document.getElementById("searchbox").onchange = function(event){
+      var searchBox = document.getElementById("searchbox");
+      var s = searchBox.value;
+      if ( s === '' ){
+	return;
+      }
+      var matched = stations.filter(function(v) {
+	return v.name.indexOf(s) !== -1;
+//	return v.name === s;
+      });
+      console.log(matched);
+
+      var station;
+      if ( matched.length == 1 ){
+	var detail = document.getElementById('searchbox_detail');
+	while(detail.lastChild){
+	  detail.removeChild(detail.lastChild);
+	}
+	detail.style.display = 'hidden';
+
+	station = matched[0];
+
+	localStorage.setItem('ekimemo_lat', station.lat);
+	localStorage.setItem('ekimemo_lng', station.lng);
+	var latlng = new google.maps.LatLng(station.lat, station.lng);
+	map.setCenter(latlng);
+	map.setZoom(13);
+
+      } else {
+	// 1駅に絞り込めなかった
+	var detail = document.getElementById('searchbox_detail');
+	while(detail.lastChild){
+	  detail.removeChild(detail.lastChild);
+	}
+	detail.style.display = 'inline';
+
+	var option = document.createElement('option');
+	option.value = "";
+	option.text = matched.length+"駅マッチ";
+	detail.appendChild(option);
+
+	matched.forEach(function(v){
+	  var option = document.createElement('option');
+	  option.value = v.cd+","+v.lat+","+v.lng;
+	  option.text = v.name + '(' + stationPrefs.get(v.cd).pref_name + ')';
+	  console.dir(option.text);
+	  detail.appendChild(option);
+	});
+      }
+    };
+
+    document.getElementById("abandoned").onchange = function(event){
       return initMap();
     };
+
     google.maps.event.addListener(raderCenter, 'dragend', function(e) {
       return useRader(e.latLng);
     });
