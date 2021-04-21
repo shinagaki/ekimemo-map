@@ -611,7 +611,7 @@ function init(){
     }
   }
 
-  return d3.csv('./data/stations.csv?xx', function(stations) {
+  return d3.csv('./data/stations.csv?xxxx', function(stations) {
     d3.csv('./data/station_pref.csv?xxxxx', function(stationPrefs){
       d3.csv('./data/prefs_ekimemo.csv?x', function(prefs){
 	return main(stations, stationPrefs, prefs);
