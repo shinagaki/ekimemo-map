@@ -25,4 +25,18 @@
       <a href="data-import.html">インポート</a> にてデータを設定できます。
     </p>
   </body>
+  <script>
+    let ekimemo_checkedList = localStorage.getItem('ekimemo_checkedList');
+    console.log(document.querySelector('#display-area'));
+    console.log(ekimemo_checkedList);
+    let display_area = document.querySelector('#display-area');
+    display_area.textContent = ekimemo_checkedList;
+
+    document.querySelector("#copy-button").onclick = function() {
+	let display_area = document.querySelector('#display-area');
+	display_area.select();
+	document.execCommand("Copy");
+	document.querySelector("#msg").innerHTML = 'コピーが完了しました。';
+    };
+  </script>
 </html>
