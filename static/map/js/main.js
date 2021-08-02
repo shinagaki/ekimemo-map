@@ -5,7 +5,7 @@ MAP_CENTER_DEFAULT = {
   lng: 139.745
 };
 
-DISPLAY_MARKER_THRESHOLD = 6;
+DISPLAY_MARKER_THRESHOLD = 9;
 
 // 取済済駅色
 checkedFillColor = '#f00';
