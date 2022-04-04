@@ -44,7 +44,8 @@ main = function(stations) {
       center: new google.maps.LatLng(lat, lng),
       mapTypeId: google.maps.MapTypeId.ROADMAP,
       streetViewControl: false,
-      disableDoubleClickZoom: true
+      disableDoubleClickZoom: true,
+      scaleControl: true
     });
     (function() {
       var set;
@@ -138,8 +139,8 @@ main = function(stations) {
           polygons.push(polygon);
         }
 
-	console.dir("polygons: "+Object.keys(polygons).length);
-	console.dir("markers: "+Object.keys(markers).length);
+//	console.dir("polygons: "+Object.keys(polygons).length);
+//	console.dir("markers: "+Object.keys(markers).length);
 
         if (enableMarker && currentZoom >= DISPLAY_MARKER_THRESHOLD) {
           if (!markers[d.cd]) {
